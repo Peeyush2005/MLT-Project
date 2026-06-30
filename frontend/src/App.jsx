@@ -14,6 +14,7 @@ import { connectLiveStream } from './lib/ws'
 
 import BatchUpload from './views/BatchUpload'
 import DeveloperPortal from './views/DeveloperPortal'
+import LandingPage from './views/LandingPage'
 import LiveFeed from './views/LiveFeed'
 import ManualAnalysis from './views/ManualAnalysis'
 import ModelInsights from './views/ModelInsights'
@@ -39,6 +40,7 @@ function maskRawKey(raw) {
 }
 
 export default function App() {
+  const [route, setRoute] = useState(() => window.location.pathname)
   const [activeView, setActiveView] = useState('live')
   const [modelInfo, setModelInfo] = useState(null)
   const [health, setHealth] = useState('loading')
@@ -51,10 +53,26 @@ export default function App() {
   const [keys, setKeys] = useState([])
 
   useEffect(() => {
-    getModelInfo().then(setModelInfo).catch(() => {})
+    const onPopState = () => setRoute(window.location.pathname)
+    window.addEventListener('popstate', onPopState)
+    return () => window.removeEventListener('popstate', onPopState)
   }, [])
 
+  function navigate(nextPath) {
+    if (nextPath === window.location.pathname) return
+    window.history.pushState({}, '', nextPath)
+    setRoute(nextPath)
+  }
+
+  const isLandingPage = route === '/'
+
   useEffect(() => {
+    if (isLandingPage) return
+    getModelInfo().then(setModelInfo).catch(() => {})
+  }, [isLandingPage])
+
+  useEffect(() => {
+    if (isLandingPage) return
     const pollHealth = () => {
       getHealth()
         .then((res) => setHealth(res.status || 'offline'))
@@ -63,9 +81,10 @@ export default function App() {
     pollHealth()
     const timer = window.setInterval(pollHealth, 4000)
     return () => window.clearInterval(timer)
-  }, [])
+  }, [isLandingPage])
 
   useEffect(() => {
+    if (isLandingPage) return
     if (!activeKey) return
 
     const pollStats = () => {
@@ -89,9 +108,10 @@ export default function App() {
       window.clearInterval(statsTimer)
       window.clearInterval(scenarioTimer)
     }
-  }, [activeKey])
+  }, [activeKey, isLandingPage])
 
   useEffect(() => {
+    if (isLandingPage) return
     listApiKeys()
       .then((res) => {
         const available = res.keys || []
@@ -102,9 +122,10 @@ export default function App() {
         }
       })
       .catch(() => {})
-  }, [activeKey])
+  }, [activeKey, isLandingPage])
 
   useEffect(() => {
+    if (isLandingPage) return
     const disconnect = connectLiveStream({
       apiKey: activeKey,
       onState: setStreamState,
@@ -117,7 +138,7 @@ export default function App() {
     })
 
     return disconnect
-  }, [activeKey])
+  }, [activeKey, isLandingPage])
 
   const counters = useMemo(() => {
     const e60 = streamStats.events_last_60s ?? 0
@@ -187,15 +208,19 @@ export default function App() {
     )
   }
 
+  if (isLandingPage) {
+    return <LandingPage onEnterDashboard={() => navigate('/dashboard')} />
+  }
+
   return (
     <div className="min-h-screen bg-app text-slate-100">
       <header className="sticky top-0 z-40 border-b border-cyan-950 backdrop-blur bg-[#070b11]/90">
         <div className="px-4 py-3 flex flex-wrap gap-3 items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded border border-cyan-700 grid place-items-center text-cyan-300 font-bold">SOC</div>
+            <div className="h-8 w-8 rounded border border-cyan-700 grid place-items-center text-[10px] tracking-[0.22em] text-cyan-300 font-bold">SIO</div>
             <div>
-              <div className="text-sm tracking-[0.25em] uppercase text-cyan-300">Live Threat Simulation</div>
-              <div className="text-xs text-slate-400">XGBoost IOC Classifier Control Plane</div>
+              <div className="text-sm tracking-[0.25em] uppercase text-cyan-300">SentinelIOC</div>
+              <div className="text-xs text-slate-400">Live threat simulation and IOC detection control plane</div>
             </div>
           </div>
 
@@ -225,6 +250,9 @@ export default function App() {
             </select>
             <button className="border border-cyan-700 px-2 py-1 rounded" onClick={() => setActiveView('portal')}>
               Key Manager
+            </button>
+            <button className="border border-slate-700 px-2 py-1 rounded" onClick={() => navigate('/')}>
+              Landing
             </button>
           </div>
         </div>
