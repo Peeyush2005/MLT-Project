@@ -52,6 +52,23 @@ export default function App() {
   const [activeMask, setActiveMask] = useState(getActiveApiKeyMask())
   const [keys, setKeys] = useState([])
 
+  function clearActiveKeySession() {
+    setActiveApiKey('', '')
+    setActiveKey('')
+    setActiveMask('')
+    setStreamState('disconnected')
+  }
+
+  function isAuthError(err) {
+    const message = (err?.message || '').toLowerCase()
+    return (
+      message.includes('unauthorized') ||
+      message.includes('invalid') ||
+      message.includes('revoked') ||
+      message.includes('missing')
+    )
+  }
+
   useEffect(() => {
     const onPopState = () => setRoute(window.location.pathname)
     window.addEventListener('popstate', onPopState)
@@ -90,13 +107,21 @@ export default function App() {
     const pollStats = () => {
       getStreamStats()
         .then((stats) => setStreamStats(stats))
-        .catch(() => {})
+        .catch((err) => {
+          if (isAuthError(err)) {
+            clearActiveKeySession()
+          }
+        })
     }
 
     const pollScenarios = () => {
       getScenarios()
         .then((res) => setScenarios(res.scenarios || []))
-        .catch(() => {})
+        .catch((err) => {
+          if (isAuthError(err)) {
+            clearActiveKeySession()
+          }
+        })
     }
 
     pollStats()
@@ -153,14 +178,16 @@ export default function App() {
   function handleScenarioInjected() {
     getStreamStats()
       .then((stats) => setStreamStats(stats))
-      .catch(() => {})
+      .catch((err) => {
+        if (isAuthError(err)) {
+          clearActiveKeySession()
+        }
+      })
   }
 
   function handleKeySwitch(value) {
     if (!value) {
-      setActiveApiKey('', '')
-      setActiveKey('')
-      setActiveMask('')
+      clearActiveKeySession()
       return
     }
     const keyItem = keys.find((k) => k.key_id === value)

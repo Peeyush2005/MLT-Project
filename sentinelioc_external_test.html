@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>External Client — SentinelIOC API Tester</title>
+<style>
+  :root {
+    --bg: #0b0e14;
+    --panel: #121622;
+    --border: #232a3a;
+    --text: #d7dde8;
+    --muted: #7c869c;
+    --accent: #3d9bff;
+    --green: #36c08a;
+    --red: #e2566b;
+    --mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    padding: 24px;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; }
+  header { margin-bottom: 24px; }
+  header h1 { font-size: 20px; margin: 0 0 4px; font-weight: 600; }
+  header p { margin: 0; color: var(--muted); font-size: 13px; }
+  .badge {
+    display: inline-block;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: #1c2433;
+    color: var(--accent);
+    border: 1px solid var(--border);
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+    margin-bottom: 18px;
+  }
+  .panel h2 {
+    font-size: 14px;
+    margin: 0 0 14px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 600;
+  }
+  label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  input, select {
+    width: 100%;
+    background: #0d111a;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-family: var(--mono);
+  }
+  input:focus, select:focus { outline: none; border-color: var(--accent); }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .full { grid-column: 1 / -1; }
+  button {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 9px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button:hover { opacity: 0.9; }
+  button.secondary {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-row { display: flex; gap: 10px; margin-top: 4px; }
+  .status-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 10px;
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+  .dot.ok { background: var(--green); }
+  .dot.bad { background: var(--red); }
+  pre {
+    background: #0d111a;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px;
+    font-size: 12px;
+    font-family: var(--mono);
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+    margin: 0;
+  }
+  .result-row { display: flex; gap: 14px; align-items: center; margin-bottom: 12px; }
+  .verdict {
+    font-size: 14px;
+    font-weight: 700;
+    padding: 6px 14px;
+    border-radius: 6px;
+    letter-spacing: 0.03em;
+  }
+  .verdict.malware { background: rgba(226,86,107,0.15); color: var(--red); border: 1px solid rgba(226,86,107,0.4); }
+  .verdict.benign { background: rgba(54,192,138,0.15); color: var(--green); border: 1px solid rgba(54,192,138,0.4); }
+  .conf { font-size: 13px; color: var(--muted); }
+  .feed {
+    max-height: 360px;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  .feed-row {
+    display: grid;
+    grid-template-columns: 90px 70px 100px 90px 1fr 70px;
+    gap: 8px;
+    padding: 8px 12px;
+    font-size: 12px;
+    font-family: var(--mono);
+    border-bottom: 1px solid var(--border);
+    align-items: center;
+  }
+  .feed-row:last-child { border-bottom: none; }
+  .feed-row.head {
+    color: var(--muted);
+    font-family: inherit;
+    text-transform: uppercase;
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    background: #0d111a;
+    position: sticky;
+    top: 0;
+  }
+  .pill {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .pill.malware { background: rgba(226,86,107,0.18); color: var(--red); }
+  .pill.benign { background: rgba(54,192,138,0.18); color: var(--green); }
+  .empty-feed { padding: 24px; text-align: center; color: var(--muted); font-size: 12px; }
+  .footer-note { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .small-btn { font-size: 11px; padding: 4px 10px; }
+  code.inline {
+    background: #0d111a;
+    border: 1px solid var(--border);
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>External client — SentinelIOC API tester <span class="badge">simulated 3rd-party site</span></h1>
+    <p>This page is intentionally a separate, standalone HTML file — not part of the SentinelIOC app — to demonstrate calling the API the way an outside integration would.</p>
+  </header>
+
+  <div class="panel">
+    <h2>1. Connection</h2>
+    <div class="row">
+      <div>
+        <label for="baseUrl">API base URL</label>
+        <input id="baseUrl" value="http://localhost:8001" />
+      </div>
+      <div>
+        <label for="apiKey">API key</label>
+        <input id="apiKey" placeholder="mw_live_sk_..." />
+      </div>
+    </div>
+    <div class="btn-row">
+      <button id="checkHealth">Check /api/health</button>
+      <button id="saveKey" class="secondary">Save key in this browser</button>
+    </div>
+    <div class="status-line">
+      <span class="dot" id="healthDot"></span>
+      <span id="healthText">Not checked yet</span>
+    </div>
+    <p class="footer-note">Use the backend instance running on <code class="inline">http://localhost:8001</code>. If you open this file directly in the browser or through a local static server, the backend must allow that origin via CORS.</p>
+  </div>
+
+  <div class="panel">
+    <h2>2. Send a test prediction (proves the key works)</h2>
+    <div class="row3">
+      <div>
+        <label>ioc_type</label>
+        <select id="ioc_type">
+          <option>ip</option><option selected>domain</option><option>url</option><option>hash</option>
+        </select>
+      </div>
+      <div>
+        <label>threat_type</label>
+        <select id="threat_type">
+          <option>benign</option><option selected>botnet_cc</option><option>phishing</option>
+          <option>trojan</option><option>ransomware</option><option>spyware</option>
+        </select>
+      </div>
+      <div>
+        <label>malware_family</label>
+        <select id="malware_family">
+          <option>none</option><option selected>emotet</option><option>trickbot</option>
+          <option>qakbot</option><option>cobalt_strike</option><option>redline_stealer</option><option>lockbit</option>
+        </select>
+      </div>
+    </div>
+    <div class="row3">
+      <div>
+        <label>src_country</label>
+        <select id="src_country">
+          <option>US</option><option selected>RU</option><option>CN</option><option>NL</option>
+          <option>DE</option><option>BR</option><option>IN</option><option>VN</option>
+          <option>FR</option><option>GB</option><option>UA</option><option>KR</option>
+        </select>
+      </div>
+      <div>
+        <label>tags</label>
+        <select id="tags">
+          <option selected>c2</option><option>exfil</option><option>suspicious</option>
+          <option>recon</option><option>lateral_movement</option><option>persistence</option>
+          <option>scanner</option><option>research</option><option>cdn</option>
+          <option>known_good</option><option>monitoring</option><option>none</option>
+        </select>
+      </div>
+      <div>
+        <label>reporter</label>
+        <select id="reporter">
+          <option>analyst_team_a</option><option>analyst_team_b</option>
+          <option selected>automated_feed_1</option><option>automated_feed_2</option>
+          <option>partner_org</option><option>honeypot_net</option>
+        </select>
+      </div>
+    </div>
+    <div class="row3">
+      <div>
+        <label>confidence_level (0-100)</label>
+        <input id="confidence_level" type="number" value="75" />
+      </div>
+      <div>
+        <label>days_active</label>
+        <input id="days_active" type="number" value="5" />
+      </div>
+      <div>
+        <label>dst_port</label>
+        <input id="dst_port" type="number" value="4444" />
+      </div>
+    </div>
+    <div class="btn-row">
+      <button id="sendPredict">Send POST /api/predict</button>
+      <button id="sendBadKey" class="secondary">Test with invalid key (expect 401)</button>
+      <button id="sendBurst" class="secondary">Send 10 fast requests (test rate limit)</button>
+    </div>
+
+    <div style="margin-top:16px;" id="resultBlock"></div>
+  </div>
+
+  <div class="panel">
+    <h2>3. Live feed — watch this client's own requests stream in</h2>
+    <p class="footer-note">This is a local feed of calls made <em>from this page</em>, newest first. It does not connect to SentinelIOC's internal WebSocket stream — it shows exactly what an external integrator sees on their side after each call.</p>
+    <div class="feed">
+      <div class="feed-row head">
+        <span>Time</span><span>IOC</span><span>Threat</span><span>Verdict</span><span>Status</span><span>ms</span>
+      </div>
+      <div id="feedBody"></div>
+    </div>
+    <div class="btn-row" style="margin-top:10px;">
+      <button id="clearFeed" class="secondary small-btn">Clear feed</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>4. Equivalent curl command</h2>
+    <pre id="curlOut">curl ...</pre>
+    <p class="footer-note">Run this from any terminal on the same machine (or any machine that can reach the base URL above) to confirm the API works completely independently of this page or the SentinelIOC frontend.</p>
+  </div>
+
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+
+function loadKey() {
+  const saved = localStorage.getItem('sentinelioc_test_key');
+  const savedUrl = localStorage.getItem('sentinelioc_test_url');
+  if (saved) $('apiKey').value = saved;
+  if (savedUrl) $('baseUrl').value = savedUrl;
+}
+loadKey();
+
+$('saveKey').addEventListener('click', () => {
+  localStorage.setItem('sentinelioc_test_key', $('apiKey').value.trim());
+  localStorage.setItem('sentinelioc_test_url', $('baseUrl').value.trim());
+  $('saveKey').textContent = 'Saved';
+  setTimeout(() => $('saveKey').textContent = 'Save key in this browser', 1200);
+});
+
+function currentRecord() {
+  return {
+    ioc_type: $('ioc_type').value,
+    threat_type: $('threat_type').value,
+    malware_family: $('malware_family').value,
+    confidence_level: Number($('confidence_level').value),
+    dst_port: Number($('dst_port').value),
+    days_active: Number($('days_active').value),
+    src_country: $('src_country').value,
+    tags: $('tags').value,
+    reporter: $('reporter').value
+  };
+}
+
+function normalizedBaseUrl() {
+  const raw = ($('baseUrl').value || '').trim().replace(/\/+$/, '');
+  if (!raw) return 'http://localhost:8001';
+  return raw.endsWith('/api') ? raw.slice(0, -4) : raw;
+}
+
+function updateCurl() {
+  const base = normalizedBaseUrl();
+  const key = $('apiKey').value.trim() || 'YOUR_API_KEY';
+  const body = JSON.stringify(currentRecord());
+  $('curlOut').textContent =
+`curl -X POST ${base}/api/predict \\
+  -H "Content-Type: application/json" \\
+  -H "X-API-Key: ${key}" \\
+  -d '${body}'`;
+}
+['baseUrl','apiKey','ioc_type','threat_type','malware_family','src_country','tags','reporter','confidence_level','days_active','dst_port']
+  .forEach(id => $(id).addEventListener('input', updateCurl));
+updateCurl();
+
+$('checkHealth').addEventListener('click', async () => {
+  const base = normalizedBaseUrl();
+  $('healthText').textContent = 'Checking...';
+  $('healthDot').className = 'dot';
+  try {
+    const res = await fetch(base + '/api/health');
+    if (res.ok) {
+      const data = await res.json();
+      $('healthDot').className = 'dot ok';
+      $('healthText').textContent = 'Online — ' + JSON.stringify(data);
+    } else {
+      $('healthDot').className = 'dot bad';
+      $('healthText').textContent = 'Reachable but returned ' + res.status;
+    }
+  } catch (e) {
+    $('healthDot').className = 'dot bad';
+    $('healthText').textContent = 'Cannot reach backend. Is it running, and is CORS enabled for this origin? (' + e.message + ')';
+  }
+});
+
+function addFeedRow({ time, ioc, threat, verdict, status, ms }) {
+  const empty = document.querySelector('.empty-feed');
+  if (empty) empty.remove();
+  const row = document.createElement('div');
+  row.className = 'feed-row';
+  const verdictHtml = verdict
+    ? `<span class="pill ${verdict}">${verdict}</span>`
+    : '<span style="color:var(--muted)">—</span>';
+  row.innerHTML = `
+    <span>${time}</span>
+    <span>${ioc}</span>
+    <span>${threat}</span>
+    ${verdictHtml}
+    <span style="color:${status >= 400 ? 'var(--red)' : 'var(--green)'}">${status}</span>
+    <span>${ms}</span>
+  `;
+  $('feedBody').prepend(row);
+}
+
+function renderResult(data, ms, httpStatus) {
+  const block = $('resultBlock');
+  if (httpStatus !== 200) {
+    block.innerHTML = `
+      <div class="result-row">
+        <span class="verdict malware">HTTP ${httpStatus}</span>
+        <span class="conf">Request rejected — see raw response below</span>
+      </div>
+      <pre>${JSON.stringify(data, null, 2)}</pre>
+    `;
+    return;
+  }
+  const isMalware = data.prediction === 'malware';
+  block.innerHTML = `
+    <div class="result-row">
+      <span class="verdict ${isMalware ? 'malware' : 'benign'}">${data.prediction.toUpperCase()}</span>
+      <span class="conf">confidence ${(data.confidence * 100).toFixed(2)}% · ${ms} ms · request ${data.request_id || ''}</span>
+    </div>
+    <pre>${JSON.stringify(data, null, 2)}</pre>
+  `;
+}
+
+async function callPredict(useBadKey = false) {
+  const base = normalizedBaseUrl();
+  const key = useBadKey ? 'mw_live_sk_invalid_key_demo' : $('apiKey').value.trim();
+  const record = currentRecord();
+  const t0 = performance.now();
+  let status = 0, data = null;
+  try {
+    const res = await fetch(base + '/api/predict', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-API-Key': key },
+      body: JSON.stringify(record)
+    });
+    status = res.status;
+    data = await res.json().catch(() => ({ detail: 'Non-JSON response' }));
+  } catch (e) {
+    data = { detail: 'Network error: ' + e.message };
+    status = 0;
+  }
+  const ms = Math.round(performance.now() - t0);
+  renderResult(data, ms, status);
+  addFeedRow({
+    time: new Date().toLocaleTimeString(),
+    ioc: record.ioc_type,
+    threat: record.threat_type,
+    verdict: status === 200 ? data.prediction : null,
+    status,
+    ms
+  });
+}
+
+$('sendPredict').addEventListener('click', () => callPredict(false));
+$('sendBadKey').addEventListener('click', () => callPredict(true));
+
+$('sendBurst').addEventListener('click', async () => {
+  $('sendBurst').disabled = true;
+  for (let i = 0; i < 10; i++) {
+    await callPredict(false);
+  }
+  $('sendBurst').disabled = false;
+});
+
+$('clearFeed').addEventListener('click', () => {
+  $('feedBody').innerHTML = '<div class="empty-feed">No requests yet from this page.</div>';
+});
+
+$('feedBody').innerHTML = '<div class="empty-feed">No requests yet from this page.</div>';
+</script>
+</body>
+</html>
