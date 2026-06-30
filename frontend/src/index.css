@@ -1,0 +1,68 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #0a0e14;
+  --bg-soft: #111924;
+  --line: #153049;
+  --cyan: #22d3ee;
+  --rose: #fb7185;
+}
+
+body {
+  margin: 0;
+  background: radial-gradient(circle at 0% 0%, #10243a 0%, #0a0e14 45%, #070b11 100%);
+  color: #dbeafe;
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+code,
+pre,
+.font-mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.bg-app {
+  background-image:
+    linear-gradient(rgba(12, 24, 34, 0.88), rgba(9, 15, 24, 0.92)),
+    repeating-linear-gradient(
+      to bottom,
+      rgba(34, 211, 238, 0.03) 0px,
+      rgba(34, 211, 238, 0.03) 1px,
+      transparent 1px,
+      transparent 4px
+    );
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0c1520;
+}
+::-webkit-scrollbar-thumb {
+  background: #1f3a56;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #2c587f;
+}
+
+.feed-scroll > div {
+  animation: feedIn 260ms ease-out;
+}
+
+@keyframes feedIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

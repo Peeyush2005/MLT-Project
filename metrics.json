@@ -1,0 +1,76 @@
+{
+  "model": "XGBoost",
+  "task": "binary_classification",
+  "classes": [
+    "benign",
+    "malware"
+  ],
+  "train_size": 4000,
+  "test_size": 1000,
+  "features": [
+    "ioc_type",
+    "threat_type",
+    "malware_family",
+    "confidence_level",
+    "src_country",
+    "dst_port",
+    "tags",
+    "reporter",
+    "days_active"
+  ],
+  "accuracy": 0.962,
+  "f1_macro": 0.9029622063329928,
+  "precision_macro": 0.8740530303030303,
+  "recall_macro": 0.9388888888888889,
+  "roc_auc": 0.9901777777777777,
+  "confusion_matrix": [
+    [
+      91,
+      9
+    ],
+    [
+      29,
+      871
+    ]
+  ],
+  "best_params": {
+    "subsample": 0.8,
+    "scale_pos_weight": 1.0,
+    "reg_lambda": 1,
+    "reg_alpha": 0.1,
+    "n_estimators": 500,
+    "min_child_weight": 1,
+    "max_depth": 6,
+    "learning_rate": 0.05,
+    "colsample_bytree": 0.8
+  },
+  "best_cv_roc_auc": 0.9981766975308644,
+  "hyperparameter_search": {
+    "method": "RandomizedSearchCV",
+    "n_iter": 30,
+    "cv_folds": 5,
+    "scoring": "roc_auc"
+  },
+  "class_balance": {
+    "method": "SMOTE",
+    "train_before_smote": {
+      "benign": 400,
+      "malware": 3600
+    },
+    "train_after_smote": {
+      "benign": 3600,
+      "malware": 3600
+    }
+  },
+  "feature_importance_top20": {
+    "threat_type": 0.3636305034160614,
+    "malware_family": 0.3124009072780609,
+    "dst_port": 0.14078612625598907,
+    "tags": 0.07446381449699402,
+    "confidence_level": 0.03256775066256523,
+    "days_active": 0.022740408778190613,
+    "ioc_type": 0.021258831024169922,
+    "src_country": 0.01806674897670746,
+    "reporter": 0.014084910042583942
+  }
+}
